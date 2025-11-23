@@ -1,173 +1,168 @@
-# WaybackScope
 
-**WaybackScope** is a fast Wayback Machine URL collector for recon and web security work.
+# **WaybackScope**
 
-It queries the Internet Archive’s CDX API to pull **historical URLs** for one or more domains, with options for:
+WaybackScope is a high-speed **Wayback Machine URL harvesting engine** built for security researchers, bug bounty hunters, and reconnaissance workflows.
 
-- Exact domains (`example.com`)
-- Wildcard subdomains (`*.example.com`)
-- Domain lists
-- Piped input
-- Concurrency, timeouts, retries, and custom User-Agent
-- Silent streaming mode suitable for chaining into other tools
+It pulls historical URLs directly from the **Internet Archive CDX API**, supports wildcard subdomain expansion, piped input, concurrency, retries, custom User-Agent, silent streaming mode, and clean domain normalization.
 
-> ⚠ Use this tool only on targets you are authorized to test.
+> ⚠ **Legal Notice:** Only use WaybackScope on targets you are authorized to test.
+> Misuse can violate laws. The developer holds zero liability for damage or misuse.
 
 ---
 
-## ✨ Features
+## 🚀 **Features**
 
-### 🔭 Domain modes
+### ✔ High-speed URL extraction
 
-- `-u` – **Exact domain only**
+Queries Wayback’s CDX API with optimized concurrency and HTTP transport tuning.
 
-  ```bash
+### ✔ Domain modes
+
+* **Exact domain**
+
+  ```
   ./waybackscope -u example.com
-  # Queries: url=example.com/*
--d – Domain + subdomains
+  → url=example.com/*
+  ```
+* **Wildcard domain**
 
-./waybackscope -d example.com
-# Queries: url=*.example.com/*
+  ```
+  ./waybackscope -d example.com
+  → url=*.example.com/*
+  ```
+* **Domain list file** (`-dl`)
+* **Piped input** (treated as exact domains)
 
+### ✔ Fully silent streaming mode
 
--dl – Domain list file
+`-s` prints **only URLs** — ideal for chaining into pipelines:
 
-./waybackscope -dl domains.txt
+```
+./waybackscope -d example.com -s | httpx -silent | nuclei -silent
+```
 
+### ✔ Resilient request engine
 
-One domain per line
+* Timeout handling
+* Retries (`-retries`)
+* Delay between domains (`-delay-ms`)
 
-Lines starting with # are ignored
+### ✔ Custom User-Agent
 
-Each domain is normalized (schemes/paths stripped)
+```
+-ua "ReconTool/2.0"
+```
 
-Piped input – from another tool:
+### ✔ Domain normalization
 
-cat roots.txt | ./waybackscope
+Accepts messy input like:
 
+* `https://example.com/`
+* `http://sub.example.com/login`
+* `example.com/`
+* `sub.example.com/path/`
 
-Piped domains are treated as exact (-u-style).
+All converted to clean hostnames.
 
-⚙ Concurrency & robustness
+---
 
--w – number of workers (concurrent domain fetchers)
+## 🔧 **Requirements**
 
--t – HTTP timeout per request (seconds)
+* Go 1.18+
+* Internet access (Archive.org)
 
--retries – how many times to retry a domain on transient errors
+No external libraries — **pure Go standard library**.
 
--delay-ms – delay in milliseconds between domains (per worker)
+---
 
-WaybackScope uses a tuned http.Transport and a configurable User-Agent:
+## 📦 **Installation**
 
--ua – set your own UA (default: WaybackScope/1.0 (@h6nt3r))
-
-🧵 Streaming output
-
-URLs are streamed as they are discovered:
-
-Sent immediately to stdout
-
-Optionally written to a file with -o
-
-Example:
-
-./waybackscope -d example.com -o example_urls.txt
-
-
-You can pipe directly into other tools:
-
-./waybackscope -dl roots.txt | httpx -silent | nuclei -silent
-
-🤫 Silent mode
-
-Use -s to enable silent mode:
-
-./waybackscope -d example.com -s
-
-
-In silent mode:
-
-Only URLs are printed
-
-No banner, no stats, no error messages
-
-Ideal for scripting and chaining with other tools
-
-📊 Error tracking
-
-For debugging or tuning (non-silent mode), after execution finishes you’ll see:
-
-Total time taken
-
-Number of timeout errors
-
-Number of other errors (connection, read errors, etc.)
-
-Optional message if results were written to file
-
-This helps you judge whether your timeout/retry settings are too aggressive.
-
-🔧 Requirements
-
-Go (for building)
-
-Internet access (Wayback Machine / archive.org)
-
-No external Go modules beyond the standard library.
-
-🛠 Build & Install
+```bash
 git clone https://github.com/YOUR_USERNAME/WaybackScope.git
 cd WaybackScope
 go build -o waybackscope main.go
+```
 
+---
 
-Now you can run:
+## ▶ **Usage**
 
-./waybackscope -h
-
-▶ Usage
-
-Basic flags:
-
--u          Target domain only (no subdomains, e.g., example.com)
--d          Target domain with subdomains (e.g., example.com)
--dl         File containing list of domains (one per line)
+```
+-u          Target domain only (no subdomains)
+-d          Target domain with subdomains
+-dl         File containing list of domains
 -t          Timeout in seconds
--w          Number of concurrent workers (default 5)
--s          Silent mode: ONLY URLs printed
+-w          Number of workers (default 5)
+-s          Silent mode (URLs only)
 -o          Output file (e.g., result.txt)
--ua         Custom User-Agent for Wayback requests
--retries    Number of retries per domain on transient errors
--delay-ms   Delay in milliseconds between processing domains
+-ua         Custom User-Agent
+-retries    Retries on transient errors
+-delay-ms   Delay between domain requests (ms)
+```
 
+---
 
-Examples:
+## 🧪 **Examples**
 
-# Single domain with subdomains
+### Single domain (wildcard)
+
+```bash
 ./waybackscope -d example.com
+```
 
-# Exact domain only
+### Exact domain
+
+```bash
 ./waybackscope -u example.com
+```
 
-# Domain list (wildcard mode)
-./waybackscope -dl domains.txt -w 10 -t 15
+### Domain list (wildcard mode)
 
-# Pipe domains from another tool
-cat roots.txt | ./waybackscope -s | tee wayback_urls.txt
+```bash
+./waybackscope -dl domains.txt -w 10
+```
 
-# With retries, delay, and custom UA
-./waybackscope -d example.com -retries 3 -delay-ms 250 -ua "MyReconTool/1.0"
+### Silent pipeline
 
-⚠ Legal / Ethical
+```bash
+./waybackscope -d example.com -s | anew
+```
 
-This tool is intended for:
+### Custom UA + retries
 
-Security researchers
+```bash
+./waybackscope -d example.com -ua "MyAgent/1.0" -retries 3
+```
 
-Penetration testers
+### Piped input
 
-Bug bounty hunters
+```bash
+cat roots.txt | ./waybackscope -s
+```
 
-Use it only on targets where you have explicit permission.
-Unauthorized testing or scraping may be illegal in your jurisdiction.
+---
+
+## 📊 **Output Summary (non-silent mode)**
+
+Shows:
+
+* Total time
+* Timeout errors
+* Other errors
+* Optional output file path
+
+In silent mode **none of this appears** — only URLs.
+
+---
+
+## ⚖ **Ethical / Legal**
+
+WaybackScope is intended for:
+
+* Reconnaissance
+* Security assessments
+* Bug bounty research
+
+Use ONLY on systems where you have permission.
+Unauthorized scraping or probing can violate local laws.
+
